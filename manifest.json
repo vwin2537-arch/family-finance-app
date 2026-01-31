@@ -4,11 +4,11 @@
     "description": "จดบันทึกรายรับรายจ่ายในครอบครัวและธุรกิจ",
     "start_url": "index.html",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "background_color": "#FFF9F0",
     "theme_color": "#FFB7B2",
     "icons": [
         {
-            "src": "https://cdn-icons-png.flaticon.com/512/2617/2617342.png",
+            "src": "icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
