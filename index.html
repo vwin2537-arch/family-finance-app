@@ -66,6 +66,16 @@
                 border-bottom-right-radius: 15px;
                 z-index: 10001;
             }
+
+            /* Adjust Bottom Nav for Frame */
+            .bottom-nav {
+                position: absolute !important;
+                bottom: 20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 90% !important;
+                z-index: 100 !important;
+            }
         }
     </style>
 </head>
@@ -268,31 +278,29 @@
                 <div id="expenseList" class="tx-list"></div>
             </section>
         </main>
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="dashboardPage">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">หน้าแรก</span>
+            </button>
+            <button class="nav-item" data-target="businessPage">
+                <span class="nav-icon">💼</span>
+                <span class="nav-label">ธุรกิจ</span>
+            </button>
+            <button class="nav-item" data-target="transactionsPage">
+                <span class="nav-icon">🧾</span>
+                <span class="nav-label">ประวัติ</span>
+            </button>
+            <button class="nav-item" data-target="investmentPage">
+                <span class="nav-icon">💎</span>
+                <span class="nav-label">ลงทุน</span>
+            </button>
+            <button class="nav-item" onclick="document.getElementById('settingsBtn').click()">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">ตั้งค่า</span>
+            </button>
+        </nav>
     </div>
-
-    <!-- NAV -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" data-target="dashboardPage">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-label">หน้าแรก</span>
-        </button>
-        <button class="nav-item" data-target="businessPage">
-            <span class="nav-icon">�</span>
-            <span class="nav-label">ธุรกิจ</span>
-        </button>
-        <button class="nav-item" data-target="transactionsPage">
-            <span class="nav-icon">🧾</span>
-            <span class="nav-label">ประวัติ</span>
-        </button>
-        <button class="nav-item" data-target="investmentPage">
-            <span class="nav-icon">💎</span>
-            <span class="nav-label">ลงทุน</span>
-        </button>
-        <button class="nav-item" onclick="document.getElementById('settingsBtn').click()">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label">ตั้งค่า</span>
-        </button>
-    </nav>
 
     <!-- MODAL: ADD TRANSACTION -->
     <div class="modal" id="transactionModal">
