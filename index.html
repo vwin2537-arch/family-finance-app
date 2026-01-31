@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>บันทึกเงินของหนู 🐷</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        body.loaded {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body onload="document.body.classList.add('loaded')">
+
+    <!-- Loading Screen -->
+    <div id="loadingOverlay" class="loading-screen">
+        <div class="bouncing-pig">🐷</div>
+        <p style="margin-top: 10px; color: #FFB7B2; font-weight: 700;">กำลังโหลดแป๊บนึงน้า...</p>
+    </div>
+    <script>
+        setTimeout(() => {
+            const el = document.getElementById('loadingOverlay');
+            if (el && getComputedStyle(el).opacity !== '0') {
+                el.classList.add('hidden');
+                setTimeout(() => el.style.display = 'none', 500);
+            }
+        }, 5000);
+    </script>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="brand-badge">🏡 Family Biz</div>
+                <div id="syncStatus" style="font-size:0.7rem; color:#aaa; margin-left:10px;">⚪ รอเชื่อมต่อ...</div>
+            </div>
+            <button class="btn-circle" id="settingsBtn">⚙️</button>
+        </header>
+
+        <main>
+            <!-- PAGE: HOME -->
+            <section id="dashboardPage" class="page active">
+                <div class="hero-card">
+                    <div class="hero-content">
+                        <div class="balance-label">กำไรสุทธิ (เดือนนี้)</div>
+                        <div class="balance-amount" id="netProfit">฿0</div>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-pill inc" id="viewIncomeBtn">
+                        <div class="pill-icon">💰</div>
+                        <div class="pill-val" id="totalIncome">฿0</div>
+                        <div class="pill-label">รายรับ</div>
+                    </div>
+                    <div class="stat-pill exp" id="viewExpenseBtn">
+                        <div class="pill-icon">💸</div>
+                        <div class="pill-val" id="totalExpense">฿0</div>
+                        <div class="pill-label">รายจ่าย</div>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button class="candy-btn inc" id="quickAddIncome">
+                        <div class="candy-icon">+</div>
+                        <div class="candy-label">รายรับ</div>
+                    </button>
+                    <button class="candy-btn exp" id="quickAddExpense">
+                        <div class="candy-icon">-</div>
+                        <div class="candy-label">รายจ่าย</div>
+                    </button>
+                    <button class="candy-btn inv" id="quickAddInvest">
+                        <div class="candy-icon">💎</div>
+                        <div class="candy-label">ลงทุน</div>
+                    </button>
+                </div>
+
+                <div class="section-title"><span>📋 ล่าสุด</span></div>
+                <div class="tx-list" id="recentTransactions"></div>
+            </section>
+
+            <!-- PAGE: DASHBOARD/STATS -->
+            <section id="statsPage" class="page">
+                <div class="section-title"><span>📊 แดชบอร์ดสรุปผล</span></div>
+                <div class="chart-container"
+                    style="background:white; border-radius:24px; padding:15px; margin-bottom:20px; box-shadow:var(--shadow-soft); text-align:center; min-height:250px;">
+                    <h3 style="margin-bottom:10px; font-size:1rem; text-align:left;">สรุปค่าใช้จ่าย (เดือนนี้)</h3>
+                    <canvas id="expenseChart" style="max-height:200px;"></canvas>
+                    <div id="chartPlaceholder" style="display:none; color:#bbb; padding:40px 0;">
+                        <div style="font-size:3rem; opacity:0.3;">📉</div>
+                        <p>ยังไม่มีรายการใช้จ่าย</p>
+                    </div>
+                </div>
+                <!-- Monthly Summary -->
+                <div class="stats-row">
+                    <div class="stat-pill inc">
+                        <div class="pill-label">รายรับรวม</div>
+                        <div class="pill-val" id="statsIncome">฿0</div>
+                    </div>
+                    <div class="stat-pill exp">
+                        <div class="pill-label">รายจ่ายรวม</div>
+                        <div class="pill-val" id="statsExpense">฿0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PAGE: ALL TRANSACTIONS -->
+            <section id="transactionsPage" class="page">
+                <div class="section-title">
+                    <span>🧾 รายการทั้งหมด</span>
+                    <input type="month" id="allFilterDate" class="input-cute"
+                        style="width:auto; padding:5px 10px; margin:0; font-size:0.9rem;">
+                </div>
+                <div id="allTransactions" class="tx-list"></div>
+            </section>
+
+            <!-- PAGE: INVEST -->
+            <section id="investmentPage" class="page">
+                <div class="hero-card" style="background: #E8F4FF; border-color: #D6E9FF;">
+                    <div class="balance-label">ยอดลงทุนรวม</div>
+                    <div class="balance-amount" style="color: #4A90E2;" id="totalInvestment">฿0</div>
+                </div>
+                <div class="investor-card">
+                    <div class="person" style="flex:1;">
+                        <div class="avatar-circle">👨</div>
+                        <div>สามี</div>
+                        <div style="font-weight:700; font-size:1.2rem; color:#4A90E2;" id="husbandInvPage">฿0</div>
+                        <small id="husbandSharePage">0%</small>
+                    </div>
+                    <div class="person" style="flex:1;">
+                        <div class="avatar-circle">👩</div>
+                        <div>ภรรยา</div>
+                        <div style="font-weight:700; font-size:1.2rem; color:#FF9AA2;" id="wifeInvPage">฿0</div>
+                        <small id="wifeSharePage">0%</small>
+                    </div>
+                </div>
+                <h3 class="section-title">ประวัติการเติมเงิน</h3>
+                <div class="tx-list" id="investmentList"></div>
+            </section>
+
+            <!-- PAGE: BUSINESS SUMMARY (ธุรกิจ) -->
+            <section id="businessPage" class="page">
+                <div class="section-title"><span>💼 สรุปธุรกิจ</span></div>
+
+                <!-- Cost Reserve Card -->
+                <div class="hero-card"
+                    style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border-color: #FFB74D;">
+                    <div class="balance-label">📦 กองทุนต้นทุน (คงเหลือ)</div>
+                    <div class="balance-amount" style="color: #E65100;" id="costReserveBalance">฿0</div>
+                    <button id="withdrawCostBtn" class="btn-save"
+                        style="margin-top:10px; background:#FB8C00; padding:8px 20px; font-size:0.9rem;">ถอนเงิน</button>
+                </div>
+
+                <!-- Profit Sharing Stats -->
+                <div class="section-title" style="margin-top:20px;"><span>💰 ส่วนแบ่งกำไร</span></div>
+                <div class="investor-card" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">
+                    <div class="person" style="flex:1;">
+                        <div class="avatar-circle">👨</div>
+                        <div>สามี</div>
+                        <div style="font-weight:700; font-size:1.3rem; color:#388E3C;" id="husbandProfit">฿0</div>
+                        <small id="husbandProfitPct" style="color:#666;">50%</small>
+                    </div>
+                    <div class="person" style="flex:1;">
+                        <div class="avatar-circle">👩</div>
+                        <div>ภรรยา</div>
+                        <div style="font-weight:700; font-size:1.3rem; color:#E91E63;" id="wifeProfit">฿0</div>
+                        <small id="wifeProfitPct" style="color:#666;">50%</small>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="stats-row" style="margin-top:15px;">
+                    <div class="stat-pill" style="background:#FFF8E1;">
+                        <div class="pill-label">รายได้รวม (หลังหักทุน)</div>
+                        <div class="pill-val" id="bizTotalProfit" style="color:#F57C00;">฿0</div>
+                    </div>
+                    <div class="stat-pill" style="background:#FFEBEE;">
+                        <div class="pill-label">หักรายจ่าย</div>
+                        <div class="pill-val" id="bizTotalExpense" style="color:#D32F2F;">฿0</div>
+                    </div>
+                </div>
+                <div
+                    style="background:white; border-radius:20px; padding:15px; margin-top:15px; text-align:center; box-shadow:var(--shadow-soft);">
+                    <div style="font-size:0.9rem; color:#888;">กำไรสุทธิ (แบ่งได้)</div>
+                    <div style="font-size:1.8rem; font-weight:700; color:#4CAF50;" id="bizNetProfit">฿0</div>
+                </div>
+
+                <!-- Withdrawal History -->
+                <div class="section-title" style="margin-top:20px;"><span>📋 ประวัติถอนเงินจากกองทุน</span></div>
+                <div class="tx-list" id="withdrawalList"></div>
+            </section>
+
+            <!-- Hidden Pages for Income/Expense -->
+            <section id="incomePage" class="page">
+                <div class="section-title">
+                    <span>💰 รายรับทั้งหมด</span>
+                    <input type="month" id="incomeFilterDate" class="input-cute"
+                        style="width:auto; padding:5px 10px; margin:0; font-size:0.9rem;">
+                </div>
+                <div id="incomeList" class="tx-list"></div>
+            </section>
+            <section id="expensePage" class="page">
+                <div class="section-title">
+                    <span>💸 รายจ่ายทั้งหมด</span>
+                    <input type="month" id="expenseFilterDate" class="input-cute"
+                        style="width:auto; padding:5px 10px; margin:0; font-size:0.9rem;">
+                </div>
+                <div id="expenseList" class="tx-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- NAV -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-target="dashboardPage">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">หน้าแรก</span>
+        </button>
+        <button class="nav-item" data-target="businessPage">
+            <span class="nav-icon">�</span>
+            <span class="nav-label">ธุรกิจ</span>
+        </button>
+        <button class="nav-item" data-target="transactionsPage">
+            <span class="nav-icon">🧾</span>
+            <span class="nav-label">ประวัติ</span>
+        </button>
+        <button class="nav-item" data-target="investmentPage">
+            <span class="nav-icon">💎</span>
+            <span class="nav-label">ลงทุน</span>
+        </button>
+        <button class="nav-item" onclick="document.getElementById('settingsBtn').click()">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">ตั้งค่า</span>
+        </button>
+    </nav>
+
+    <!-- MODAL: ADD TRANSACTION -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-box">
+            <div class="close-bubble btn-close">✕</div>
+            <h2 id="modalTitle" style="text-align: center; margin-bottom: 20px;">จดรายการใหม่</h2>
+            <form id="transactionForm">
+                <input type="hidden" id="transactionType">
+                <input type="number" id="amountInput" class="input-cute input-big" placeholder="0.00" required
+                    inputmode="decimal" step="0.01">
+
+                <!-- Cost Deduction Toggle (Only for Income) -->
+                <div id="costDeductRow"
+                    style="display:none; margin:10px 0; padding:10px; background:#FFF8E1; border-radius:12px; text-align:center;">
+                    <label style="display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="deductCostCheck" checked style="width:20px; height:20px;">
+                        <span>📦 หักเข้ากองทุนต้นทุน <strong id="costPctLabel">30%</strong></span>
+                    </label>
+                </div>
+
+                <p style="text-align:center; font-size:0.9rem; margin-top:10px;">เลือกหมวดหมู่ 👇</p>
+                <div class="cat-grid" id="categoryGrid"></div>
+                <input type="date" id="dateInput" class="input-cute">
+                <input type="text" id="descriptionInput" class="input-cute" placeholder="บันทึกช่วยจำ (ถ้ามี)...">
+                <button type="submit" class="btn-save">บันทึกเลย! ✨</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD INVEST -->
+    <div class="modal" id="investmentModal">
+        <div class="modal-box">
+            <div class="close-bubble btn-close">✕</div>
+            <h2 style="text-align: center; margin-bottom: 20px;">เติมเงินลงทุน 💎</h2>
+            <form id="investmentForm">
+                <input type="number" id="investAmountInput" class="input-cute input-big" placeholder="0.00" required
+                    inputmode="decimal" style="color: var(--color-inv);">
+                <p style="text-align:center; font-size:0.9rem; margin:10px 0;">ใครเป็นคนเติม? 👇</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div class="cat-sticker investor-btn active" data-investor="husband"
+                        style="background:var(--bg-cream);">
+                        <span class="cat-img">👨</span> สามี
+                    </div>
+                    <div class="cat-sticker investor-btn" data-investor="wife" style="background:var(--bg-cream);">
+                        <span class="cat-img">👩</span> ภรรยา
+                    </div>
+                </div>
+                <input type="hidden" id="investorType" value="husband">
+                <input type="date" id="investDateInput" class="input-cute">
+                <input type="text" id="investNoteInput" class="input-cute" placeholder="หมายเหตุ...">
+                <button type="submit" class="btn-save" style="background: var(--color-inv);">เติมเงินเรียบร้อย
+                    ✅</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-box">
+            <div class="close-bubble btn-close">✕</div>
+            <h2 style="text-align: center; margin-bottom: 20px;">ตั้งค่าระบบ ⚙️</h2>
+
+            <label>🔗 URL ของ Google Script</label>
+            <input type="text" id="apiUrlInput" class="input-cute" placeholder="วางลิงก์ Web App ที่นี่...">
+
+            <label>📉 หักต้นทุน (%)</label>
+            <input type="number" id="costPercentInput" class="input-cute" value="30" min="0" max="100">
+
+            <div style="margin-top:15px;">
+                <label>💰 สัดส่วนแบ่งกำไร</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:5px;">
+                    <div style="text-align:center;">
+                        <span>👨 สามี</span>
+                        <input type="number" id="husbandShareInput" class="input-cute" value="50" min="0" max="100"
+                            style="text-align:center;">
+                        <small>%</small>
+                    </div>
+                    <div style="text-align:center;">
+                        <span>👩 ภรรยา</span>
+                        <input type="number" id="wifeShareInput" class="input-cute" value="50" min="0" max="100"
+                            style="text-align:center;">
+                        <small>%</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3 style="margin-bottom:10px;">จัดการหมวดหมู่ 🏷️</h3>
+            <div class="custom-cat-form">
+                <input type="text" id="newCatName" placeholder="ชื่อ (เช่น ชานม)" class="input-cute"
+                    style="width:100%; margin-bottom:5px;">
+                <div class="input-group" style="display:flex; gap:5px; width:100%; align-items:center;">
+                    <div id="selectedIconDisplay"
+                        style="font-size:1.5rem; background:#f5f5f5; padding:5px 10px; border-radius:10px;">🏷️</div>
+                    <input type="hidden" id="newCatIcon" value="🏷️">
+                    <select id="newCatType" class="input-cute" style="flex:1;">
+                        <option value="expense">รายจ่าย</option>
+                        <option value="income">รายรับ</option>
+                    </select>
+                </div>
+                <div class="emoji-picker-container">
+                    <small style="color:#aaa;">เลือกไอคอน:</small>
+                    <div class="emoji-grid">
+                        <span class="emoji-btn">🍕</span><span class="emoji-btn">🍜</span><span
+                            class="emoji-btn">☕</span><span class="emoji-btn">🧋</span>
+                        <span class="emoji-btn">👗</span><span class="emoji-btn">🚕</span><span
+                            class="emoji-btn">⛽</span><span class="emoji-btn">💊</span>
+                        <span class="emoji-btn">🐶</span><span class="emoji-btn">🐱</span><span
+                            class="emoji-btn">🎉</span><span class="emoji-btn">🎮</span>
+                        <span class="emoji-btn">✈️</span><span class="emoji-btn">🏠</span><span
+                            class="emoji-btn">📓</span><span class="emoji-btn">💸</span>
+                        <span class="emoji-btn">💰</span><span class="emoji-btn">💎</span><span
+                            class="emoji-btn">🏦</span><span class="emoji-btn">🎁</span>
+                    </div>
+                </div>
+                <button id="addCatBtn" class="btn-primary" style="width:100%; margin-top:10px;">+ เพิ่มหมวดหมู่</button>
+            </div>
+            <div id="customCatList" class="custom-cat-list"></div>
+
+            <div class="divider"></div>
+
+            <button id="saveSettingsBtn" class="btn-save" style="margin-bottom: 10px;">บันทึกการตั้งค่า</button>
+            <button id="testCloudBtn" class="btn-save" style="background:var(--color-inv); margin-bottom:10px;">☁️
+                ทดสอบการเชื่อมต่อ</button>
+            <button id="clearDataBtn" class="btn-save"
+                style="background: #FFD1D1; color: var(--color-expense); box-shadow:none; border:2px dashed var(--color-expense);">ล้างข้อมูลทั้งหมด</button>
+        </div>
+    </div>
+
+    <!-- MODAL: WITHDRAW FROM COST RESERVE -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-box" style="max-width:350px;">
+            <div class="close-bubble btn-close">✕</div>
+            <h2 style="text-align: center; margin-bottom: 20px;">📦 ถอนเงินจากกองทุน</h2>
+            <form id="withdrawForm">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <span style="color:#888;">ยอดคงเหลือ:</span>
+                    <span style="font-weight:700; color:#E65100;" id="withdrawAvailable">฿0</span>
+                </div>
+                <input type="number" id="withdrawAmount" class="input-cute input-big" placeholder="0.00" required
+                    inputmode="decimal" step="0.01" style="color:#E65100;">
+                <input type="text" id="withdrawNote" class="input-cute" placeholder="หมายเหตุ (เช่น ซื้อวัตถุดิบ)...">
+                <button type="submit" class="btn-save" style="background:#FB8C00;">ถอนเงิน</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Type Toggle for JS -->
+    <div id="typeToggle" style="display:none;"><button class="toggle-btn" data-type="income"></button><button
+            class="toggle-btn" data-type="expense"></button></div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/transactions.js"></script>
+    <script src="js/investments.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
