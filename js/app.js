@@ -9,6 +9,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App DOM Loaded. Initializing...");
 
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => {
+            console.log("Service Worker Registered");
+        });
+    }
+
     // Safety Net: Force hide loader after 5s regardless of crashes
     setTimeout(forceHideLoader, 5000);
 
