@@ -23,11 +23,49 @@
             visibility: hidden;
             opacity: 0;
             transition: opacity 0.2s;
+            background: #fdf6f6;
         }
 
         body.loaded {
             visibility: visible;
             opacity: 1;
+        }
+
+        /* VIRTUAL MOBILE FRAME (Only on Desktop) */
+        @media (min-width: 600px) {
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+            }
+
+            .app-container {
+                width: 375px;
+                height: 780px;
+                border: 12px solid #222;
+                border-radius: 40px;
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
+                position: relative;
+                overflow: hidden;
+                background: white;
+            }
+
+            /* Notch */
+            .app-container::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 150px;
+                height: 25px;
+                background: #222;
+                border-bottom-left-radius: 15px;
+                border-bottom-right-radius: 15px;
+                z-index: 10001;
+            }
         }
     </style>
 </head>
