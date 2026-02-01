@@ -91,18 +91,20 @@ function getOrCreateDatabase() {
 function setupSheets(ss) {
     if (!ss.getSheetByName('Transactions')) {
         var sh = ss.insertSheet('Transactions');
-        sh.appendRow(['ID', 'Date', 'Type', 'Category', 'Amount', 'Description', 'Timestamp']);
+        sh.appendRow(['id', 'date', 'type', 'category', 'amount', 'description', 'deductCost', 'husbandShare', 'wifeShare', 'timestamp']);
         var def = ss.getSheetByName('Sheet1');
         if (def) ss.deleteSheet(def);
     }
     if (!ss.getSheetByName('Investments')) {
         var sh2 = ss.insertSheet('Investments');
-        sh2.appendRow(['ID', 'Date', 'Investor', 'Amount', 'Note', 'Timestamp']);
+        sh2.appendRow(['id', 'date', 'investor', 'amount', 'note', 'timestamp']);
     }
     if (!ss.getSheetByName('Settings')) {
         var sh3 = ss.insertSheet('Settings');
         sh3.appendRow(['Key', 'Value']);
         sh3.appendRow(['costPercent', '30']);
+        sh3.appendRow(['husbandShare', '50']);
+        sh3.appendRow(['wifeShare', '50']);
     }
 }
 
@@ -116,7 +118,7 @@ function getAllData(ss) {
 }
 
 function saveAllData(ss, data) {
-    if (data.transactions) overwriteSheet(ss, 'Transactions', data.transactions, ['id', 'date', 'type', 'category', 'amount', 'description', 'timestamp']);
+    if (data.transactions) overwriteSheet(ss, 'Transactions', data.transactions, ['id', 'date', 'type', 'category', 'amount', 'description', 'deductCost', 'husbandShare', 'wifeShare', 'timestamp']);
     if (data.investments) overwriteSheet(ss, 'Investments', data.investments, ['id', 'date', 'investor', 'amount', 'note', 'timestamp']);
     if (data.settings) updateSettingsSheet(ss, data.settings);
 }
@@ -126,12 +128,23 @@ function saveAllData(ss, data) {
 function sheetToObjects(sheet) {
     var data = sheet.getDataRange().getValues();
     if (data.length < 2) return [];
-    var headers = data[0].map(function (h) { return h.toString().toLowerCase(); });
+    var headers = data[0]; // Keep original case from spreadsheet
 
     return data.slice(1).map(function (row) {
         var obj = {};
         headers.forEach(function (h, i) {
-            obj[h] = (row[i] instanceof Date) ? Utilities.formatDate(row[i], "GMT+7", "yyyy-MM-dd") : row[i];
+            var val = row[i];
+            if (val instanceof Date) {
+                val = Utilities.formatDate(val, "GMT+7", "yyyy-MM-dd");
+            }
+            // Smart Parsing
+            if (h === 'deductCost') val = (val === true || val === 'true');
+            if (h === 'husbandShare' || h === 'wifeShare' || h === 'amount') {
+                val = parseFloat(val);
+                if (isNaN(val)) val = 0;
+            }
+
+            obj[h] = val;
         });
         return obj;
     });
@@ -141,7 +154,12 @@ function settingsToObject(sheet) {
     var data = sheet.getDataRange().getValues();
     var settings = {};
     for (var i = 1; i < data.length; i++) {
-        settings[data[i][0]] = data[i][1];
+        var key = data[i][0];
+        var val = data[i][1];
+        if (key === 'costPercent' || key === 'husbandShare' || key === 'wifeShare') {
+            val = parseInt(val) || 0;
+        }
+        settings[key] = val;
     }
     return settings;
 }
@@ -151,18 +169,25 @@ function updateSettingsSheet(ss, newSettings) {
     sheet.clearContents();
     sheet.appendRow(['Key', 'Value']);
     sheet.appendRow(['costPercent', newSettings.costPercent || 30]);
+    sheet.appendRow(['husbandShare', newSettings.husbandShare || 50]);
+    sheet.appendRow(['wifeShare', newSettings.wifeShare || 50]);
 }
 
 function overwriteSheet(ss, sheetName, objects, fieldOrder) {
     var sheet = ss.getSheetByName(sheetName);
     sheet.clearContents();
-    var headers = fieldOrder.map(function (f) { return f.charAt(0).toUpperCase() + f.slice(1); });
+    var headers = fieldOrder; // Use camelCase as headers
     sheet.appendRow(headers);
     if (!objects || !objects.length) return;
 
     var rows = objects.map(function (obj) {
-        return fieldOrder.map(function (field) { return obj[field] || ''; });
+        return fieldOrder.map(function (field) {
+            var val = obj[field];
+            return (val === undefined || val === null) ? '' : val;
+        });
     });
 
     sheet.getRange(2, 1, rows.length, fieldOrder.length).setValues(rows);
 }
+
+
