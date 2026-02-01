@@ -30,8 +30,9 @@ const TransactionsManager = {
             .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
         const expense = currentMonthTransactions
-            .filter(t => t.type === TRANSACTION_TYPES.EXPENSE)
+            .filter(t => t.type === TRANSACTION_TYPES.EXPENSE && !t.isFundWithdrawal && t.category !== 'withdrawal')
             .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
 
         const netProfit = income - expense;
 
