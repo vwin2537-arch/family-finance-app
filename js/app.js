@@ -5,6 +5,34 @@
 
 // ใช้ Categories จาก window.DATA_CATEGORIES (ที่ประกาศไว้ใน utils.js)
 
+// ===== THEME MANAGEMENT =====
+function setupTheme() {
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeIcon').textContent = '☀️';
+    }
+
+    // Theme toggle button
+    document.getElementById('themeToggleBtn')?.addEventListener('click', toggleTheme);
+}
+
+function toggleTheme() {
+    const body = document.body;
+    const themeIcon = document.getElementById('themeIcon');
+
+    body.classList.toggle('dark-mode');
+
+    if (body.classList.contains('dark-mode')) {
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App DOM Loaded. Initializing...");
@@ -19,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Safety Net: Force hide loader after 5s regardless of crashes
     setTimeout(forceHideLoader, 5000);
 
+    setupTheme(); // NEW: Load theme
     initApp();
     setupNavigation();
     setupFilters(); // New
@@ -114,7 +143,10 @@ function updateInvestmentPage() {
 // ===== BUSINESS PAGE (กองทุนต้นทุน & แบ่งกำไร) =====
 function updateBusinessPage() {
     const costReserve = TransactionsManager.getCostReserve();
-    const profitShare = TransactionsManager.getProfitShare();
+
+    // Get month filter value
+    const monthFilter = document.getElementById('profitFilterDate')?.value || null;
+    const profitShare = TransactionsManager.getProfitShare(monthFilter);
 
     // Cost Reserve
     setTxt('costReserveBalance', `฿${Utils.formatNumber(costReserve.balance)}`);
@@ -152,6 +184,9 @@ function renderWithdrawItem(w) {
             <div class="tx-price" style="color:#E65100;">
                 -฿${Utils.formatNumber(w.amount)}
             </div>
+            <div class="tx-actions">
+                <button class="action-btn delete-btn" data-id="${w.id}" data-type="withdrawal">🗑️</button>
+            </div>
         </div>
     `;
 }
@@ -168,15 +203,22 @@ function setupFilters() {
             el.addEventListener('change', () => renderTransactions());
         }
     });
+
+    // Profit filter for business page
+    const profitFilter = document.getElementById('profitFilterDate');
+    if (profitFilter) {
+        profitFilter.value = currentMonth;  // Default to current month
+        profitFilter.addEventListener('change', updateBusinessPage);
+    }
 }
 
 function renderTransactions() {
     const txs = StorageManager.getTransactions();
     const summary = TransactionsManager.getSummary(); // Dashboard uses current month automatically
 
-    // Dashboard Recent (Always top 5 latest)
+    // Dashboard Recent (Always top 5 latest) - No edit/delete buttons
     const recent = document.getElementById('recentTransactions');
-    if (recent) recent.innerHTML = txs.slice(0, 5).map(t => renderTxItem(t)).join('');
+    if (recent) recent.innerHTML = txs.slice(0, 5).map(t => renderTxItem(t, false)).join('');
 
     // --- Filtered Pages ---
 
@@ -336,19 +378,61 @@ function renderEmpty(icon, msg) {
     `;
 }
 
-function renderTxItem(tx) {
+// Helper functions for profit share inputs
+function updateWifeShare() {
+    const husbandVal = parseFloat(document.getElementById('husbandShareInput').value) || 0;
+    const wifeVal = 100 - husbandVal;
+    document.getElementById('wifeShareInput').value = wifeVal;
+    document.getElementById('totalShareDisplay').textContent = 100;
+}
+
+function updateHusbandShare() {
+    const wifeVal = parseFloat(document.getElementById('wifeShareInput').value) || 0;
+    const husbandVal = 100 - wifeVal;
+    document.getElementById('husbandShareInput').value = husbandVal;
+    document.getElementById('totalShareDisplay').textContent = 100;
+}
+
+function renderTxItem(tx, showActions = true) {
     const cat = TransactionsManager.getCategory(tx.type, tx.category);
     const isInc = tx.type === 'income';
+
+    // Calculate individual shares for income transactions
+    let shareDisplay = '';
+    if (isInc && tx.husbandShare !== undefined) {
+        const settings = StorageManager.getSettings();
+        const costPercent = settings.costPercent || 30;
+        const profitAmount = tx.deductCost ?
+            tx.amount * (100 - costPercent) / 100 :
+            tx.amount;
+        const husbandAmount = profitAmount * tx.husbandShare / 100;
+        const wifeAmount = profitAmount * tx.wifeShare / 100;
+
+        shareDisplay = `
+            <div style="font-size:0.85rem; color:#666; margin-top:4px;">
+                👨 ฿${Utils.formatNumber(husbandAmount)} (${tx.husbandShare}%) •
+                👩 ฿${Utils.formatNumber(wifeAmount)} (${tx.wifeShare}%)
+            </div>
+        `;
+    }
+
     return `
         <div class="tx-card">
             <div class="tx-emoji">${cat ? cat.icon : '❓'}</div>
             <div class="tx-info">
                 <span class="tx-name">${cat ? cat.name : tx.category}</span>
                 <span class="tx-meta">${Utils.formatDate(tx.date)} • ${tx.description || '-'}</span>
+                ${shareDisplay}
             </div>
             <div class="tx-price ${isInc ? 'inc-text' : 'exp-text'}">
                 ${isInc ? '+' : '-'}฿${Utils.formatNumber(tx.amount)}
             </div>
+            ${showActions ? `
+                <div class="tx-actions">
+                    <button class="action-btn edit-btn" data-id="${tx.id}" data-type="transaction">✏️</button>
+                    <button class="action-btn delete-btn" data-id="${tx.id}" data-type="transaction">🗑️</button>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -363,6 +447,10 @@ function renderInvItem(inv) {
             </div>
             <div class="tx-price" style="color: var(--color-inv);">
                 +฿${Utils.formatNumber(inv.amount)}
+            </div>
+            <div class="tx-actions">
+                <button class="action-btn edit-btn" data-id="${inv.id}" data-type="investment">✏️</button>
+                <button class="action-btn delete-btn" data-id="${inv.id}" data-type="investment">🗑️</button>
             </div>
         </div>
     `;
@@ -420,7 +508,89 @@ function setupModals() {
 }
 
 function showModal(m) { if (m) m.classList.add('active'); }
-function hideAllModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+function hideAllModals() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    document.querySelectorAll('.custom-modal').forEach(m => m.classList.remove('active'));
+}
+
+// ===== CUSTOM CUTE MODALS =====
+let passwordResolver = null;
+let confirmResolver = null;
+
+function showPasswordModal() {
+    return new Promise((resolve) => {
+        passwordResolver = resolve;
+        const modal = document.getElementById('passwordModal');
+        const input = document.getElementById('passwordInput');
+        input.value = '';
+        modal.classList.add('active');
+        setTimeout(() => input.focus(), 100);
+
+        // Enter key support
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') submitPasswordModal();
+        };
+    });
+}
+
+function submitPasswordModal() {
+    const pwd = document.getElementById('passwordInput').value;
+    document.getElementById('passwordModal').classList.remove('active');
+    if (passwordResolver) {
+        passwordResolver(pwd);
+        passwordResolver = null;
+    }
+}
+
+function cancelPasswordModal() {
+    document.getElementById('passwordModal').classList.remove('active');
+    if (passwordResolver) {
+        passwordResolver(null);
+        passwordResolver = null;
+    }
+}
+
+function showAlert(title, message) {
+    return new Promise((resolve) => {
+        document.getElementById('alertTitle').textContent = title;
+        document.getElementById('alertMessage').textContent = message;
+        document.getElementById('alertModal').classList.add('active');
+        window.alertResolver = resolve;
+    });
+}
+
+function closeAlertModal() {
+    document.getElementById('alertModal').classList.remove('active');
+    if (window.alertResolver) {
+        window.alertResolver();
+        window.alertResolver = null;
+    }
+}
+
+function showConfirm(title, message) {
+    return new Promise((resolve) => {
+        confirmResolver = resolve;
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmModal').classList.add('active');
+    });
+}
+
+function acceptConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    if (confirmResolver) {
+        confirmResolver(true);
+        confirmResolver = null;
+    }
+}
+
+function cancelConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    if (confirmResolver) {
+        confirmResolver(false);
+        confirmResolver = null;
+    }
+}
 
 function setTxType(type) {
     document.getElementById('transactionType').value = type;
@@ -436,6 +606,16 @@ function setTxType(type) {
         // Update percentage label
         const settings = StorageManager.getSettings();
         document.getElementById('costPctLabel').textContent = `${settings.costPercent || 30}%`;
+    }
+
+    // Show/Hide profit share inputs (only for income)
+    const profitRow = document.getElementById('profitShareRow');
+    if (profitRow) {
+        profitRow.style.display = type === 'income' ? 'block' : 'none';
+        // Reset to default 50/50 split
+        document.getElementById('husbandShareInput').value = 50;
+        document.getElementById('wifeShareInput').value = 50;
+        document.getElementById('totalShareDisplay').textContent = 100;
     }
 
     // Toggle logic for compatibility (optional)
@@ -475,10 +655,13 @@ function setupForms() {
     });
 
     // Transaction Form
-    document.getElementById('transactionForm')?.addEventListener('submit', (e) => {
+    document.getElementById('transactionForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const amount = parseFloat(document.getElementById('amountInput').value);
-        if (!amount) return alert('กรุณาใส่จำนวนเงิน');
+        if (!amount) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
 
         const txType = document.getElementById('transactionType').value;
         const deductCost = txType === 'income' ? document.getElementById('deductCostCheck')?.checked : false;
@@ -490,7 +673,9 @@ function setupForms() {
             category: document.querySelector('#categoryGrid .cat-sticker.active')?.dataset.id || 'other',
             date: document.getElementById('dateInput').value,
             description: document.getElementById('descriptionInput').value,
-            deductCost: deductCost  // NEW: flag for cost deduction
+            deductCost: deductCost,  // NEW: flag for cost deduction
+            husbandShare: txType === 'income' ? parseFloat(document.getElementById('husbandShareInput').value) : undefined,
+            wifeShare: txType === 'income' ? parseFloat(document.getElementById('wifeShareInput').value) : undefined
         });
 
         document.getElementById('amountInput').value = '';
@@ -499,10 +684,13 @@ function setupForms() {
     });
 
     // Investment Form
-    document.getElementById('investmentForm')?.addEventListener('submit', (e) => {
+    document.getElementById('investmentForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const amount = parseFloat(document.getElementById('investAmountInput').value);
-        if (!amount) return alert('กรุณาใส่จำนวนเงิน');
+        if (!amount) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
 
         StorageManager.addInvestment({
             amount: amount,
@@ -517,15 +705,19 @@ function setupForms() {
     });
 
     // Withdraw Form (from Cost Reserve)
-    document.getElementById('withdrawForm')?.addEventListener('submit', (e) => {
+    document.getElementById('withdrawForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const amount = parseFloat(document.getElementById('withdrawAmount').value);
-        if (!amount) return alert('กรุณาใส่จำนวนเงิน');
+        if (!amount) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
 
         // Check if enough balance
         const reserve = TransactionsManager.getCostReserve();
         if (amount > reserve.balance) {
-            return alert(`ยอดเงินไม่พอ! \nคงเหลือ: ฿${Utils.formatNumber(reserve.balance)}`);
+            await showAlert('❌ ยอดเงินไม่พอ', `คงเหลือ: ฿${Utils.formatNumber(reserve.balance)}`);
+            return;
         }
 
         StorageManager.addCostWithdrawal({
@@ -538,21 +730,73 @@ function setupForms() {
         document.getElementById('withdrawNote').value = '';
         hideAllModals();
         refreshUI();
-        alert(`ถอนเงิน ฿${Utils.formatNumber(amount)} สำเร็จ! 🎉`);
+        await showAlert('✅ ถอนเงินสำเร็จ', `ถอนเงิน ฿${Utils.formatNumber(amount)} เรียบร้อยแล้ว! 🎉`);
+    });
+
+    // Password verification for edit/delete operations
+    async function verifyPassword() {
+        const pwd = await showPasswordModal();
+        return pwd === '1120';
+    }
+
+    // Edit/Delete Handlers
+    document.addEventListener('click', async (e) => {
+        // Delete Handler
+        if (e.target.closest('.delete-btn')) {
+            const btn = e.target.closest('.delete-btn');
+            const id = btn.dataset.id;
+            const type = btn.dataset.type;
+
+            // Check password first
+            const isValidPassword = await verifyPassword();
+            if (!isValidPassword) {
+                await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
+                return;
+            }
+
+            const confirmed = await showConfirm('ยืนยันการลบ', 'คุณแน่ใจว่าต้องการลบรายการนี้?');
+            if (confirmed) {
+                if (type === 'transaction') {
+                    StorageManager.deleteTransaction(id);
+                } else if (type === 'investment') {
+                    StorageManager.deleteInvestment(id);
+                } else if (type === 'withdrawal') {
+                    StorageManager.deleteCostWithdrawal(id);
+                }
+                refreshUI();
+                await showAlert('✅ ลบสำเร็จ', 'ลบรายการเรียบร้อยแล้ว');
+            }
+        }
+
+        // Edit Handler
+        if (e.target.closest('.edit-btn')) {
+            const btn = e.target.closest('.edit-btn');
+            const id = btn.dataset.id;
+            const type = btn.dataset.type;
+
+            // Check password first
+            const isValidPassword = await verifyPassword();
+            if (!isValidPassword) {
+                await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
+                return;
+            }
+
+            if (type === 'transaction') {
+                editTransaction(id);
+            } else if (type === 'investment') {
+                editInvestment(id);
+            }
+        }
     });
 }
 
 function setupSettings() {
     const urlIn = document.getElementById('apiUrlInput');
     const costIn = document.getElementById('costPercentInput');
-    const husbandShareIn = document.getElementById('husbandShareInput');
-    const wifeShareIn = document.getElementById('wifeShareInput');
 
     const settings = StorageManager.getSettings();
     if (urlIn) urlIn.value = StorageManager.getApiUrl() || '';
     if (costIn) costIn.value = settings.costPercent || 30;
-    if (husbandShareIn) husbandShareIn.value = settings.husbandShare || 50;
-    if (wifeShareIn) wifeShareIn.value = settings.wifeShare || 50;
 
     // --- Custom Category Logic ---
     const renderCustomCats = () => {
@@ -570,12 +814,15 @@ function setupSettings() {
     };
     renderCustomCats();
 
-    document.getElementById('addCatBtn')?.addEventListener('click', () => {
+    document.getElementById('addCatBtn')?.addEventListener('click', async () => {
         const name = document.getElementById('newCatName').value.trim();
         const icon = document.getElementById('newCatIcon').value || '🏷️'; // Get from hidden input
         const type = document.getElementById('newCatType').value;
 
-        if (!name) return alert('ใส่ชื่อหมวดหมู่หน่อยครับ');
+        if (!name) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่ชื่อหมวดหมู่');
+            return;
+        }
 
         const newCat = {
             id: 'custom_' + Date.now(),
@@ -602,9 +849,10 @@ function setupSettings() {
         });
     });
 
-    document.getElementById('customCatList')?.addEventListener('click', (e) => {
+    document.getElementById('customCatList')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('cat-del-btn')) {
-            if (confirm('ลบหมวดหมู่นี้ไหม?')) {
+            const confirmed = await showConfirm('ยืนยันการลบ', 'ต้องการลบหมวดหมู่นี้หรือไม่?');
+            if (confirmed) {
                 StorageManager.removeCustomCategory(e.target.dataset.id);
                 renderCustomCats();
             }
@@ -615,9 +863,7 @@ function setupSettings() {
     document.getElementById('saveSettingsBtn')?.addEventListener('click', () => {
         StorageManager.setApiUrl(urlIn.value.trim());
         StorageManager.saveSettings({
-            costPercent: parseInt(costIn.value) || 30,
-            husbandShare: parseInt(husbandShareIn?.value) || 50,
-            wifeShare: parseInt(wifeShareIn?.value) || 50
+            costPercent: parseInt(costIn.value) || 30
         });
         alert('บันทึกเรียบร้อย');
         window.location.reload();
@@ -632,19 +878,137 @@ function setupSettings() {
             const res = await StorageManager.pushToCloud();
             if (res.status === 'success') {
                 btn.textContent = '✅ เชื่อมต่อสำเร็จ!';
-                alert(`เชื่อมต่อ Google Drive สำเร็จ!\nไฟล์ Database อยู่ที่: ${res.folderId || 'โฟลเดอร์ที่กำหนด'}`);
+                await showAlert('✅ เชื่อมต่อสำเร็จ', `เชื่อมต่อ Google Drive สำเร็จ!\nไฟล์ Database อยู่ที่: ${res.folderId || 'โฟลเดอร์ที่กำหนด'}`);
             } else {
                 throw new Error(res.message);
             }
         } catch (e) {
             btn.textContent = '❌ ล้มเหลว';
-            alert('เชื่อมต่อไม่ได้: ' + e.message + '\n\nคำแนะนำ:\n1. ตรวจสอบว่า Deploy เป็น "New Deployment" หรือยัง\n2. ตรวจสอบว่าเลือก "Anyone" can access หรือยัง');
+            await showAlert('❌ เชื่อมต่อไม่ได้', 'เชื่อมต่อไม่ได้: ' + e.message + '\n\nคำแนะนำ:\n1. ตรวจสอบว่า Deploy เป็น "New Deployment" หรือยัง\n2. ตรวจสอบว่าเลือก "Anyone" can access หรือยัง');
         }
 
         setTimeout(() => btn.textContent = originalText, 3000);
     });
 
-    document.getElementById('clearDataBtn')?.addEventListener('click', () => {
-        if (confirm('ล้างข้อมูลทั้งหมด?')) { StorageManager.clearAll(); window.location.reload(); }
+    document.getElementById('clearDataBtn')?.addEventListener('click', async () => {
+        const confirmed = await showConfirm('⚠️ ล้างข้อมูลทั้งหมด?', 'การกระทำนี้ไม่สามารถย้อนกลับได้');
+        if (confirmed) {
+            StorageManager.clearAll();
+            window.location.reload();
+        }
     });
+}
+
+// ===== EDIT FUNCTIONS =====
+function editTransaction(id) {
+    const transactions = StorageManager.getTransactions();
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) return;
+
+    // Pre-fill form
+    document.getElementById('transactionType').value = tx.type;
+    document.getElementById('amountInput').value = tx.amount;
+    document.getElementById('dateInput').value = tx.date;
+    document.getElementById('descriptionInput').value = tx.description || '';
+
+    // Set modal title
+    document.getElementById('modalTitle').textContent = tx.type === 'income' ? 'แก้ไขรายรับ' : 'แก้ไขรายจ่าย';
+
+    // Load categories and select current one
+    setTxType(tx.type);
+    setTimeout(() => {
+        const catBtn = document.querySelector(`#categoryGrid .cat-sticker[data-id="${tx.category}"]`);
+        if (catBtn) {
+            document.querySelectorAll('#categoryGrid .cat-sticker').forEach(el => el.classList.remove('active'));
+            catBtn.classList.add('active');
+        }
+    }, 50);
+
+    // Set deductCost and profit shares if income
+    if (tx.type === 'income') {
+        document.getElementById('deductCostCheck').checked = tx.deductCost || false;
+        document.getElementById('husbandShareInput').value = tx.husbandShare ?? 50;
+        document.getElementById('wifeShareInput').value = tx.wifeShare ?? 50;
+    }
+
+    // Modify form submit handler to update instead of add
+    const form = document.getElementById('transactionForm');
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById('amountInput').value);
+        if (!amount) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
+
+        const txType = document.getElementById('transactionType').value;
+        const deductCost = txType === 'income' ? document.getElementById('deductCostCheck')?.checked : false;
+
+        StorageManager.updateTransaction(id, {
+            type: txType,
+            amount: amount,
+            category: document.querySelector('#categoryGrid .cat-sticker.active')?.dataset.id || 'other',
+            date: document.getElementById('dateInput').value,
+            description: document.getElementById('descriptionInput').value,
+            deductCost: deductCost,
+            husbandShare: txType === 'income' ? parseFloat(document.getElementById('husbandShareInput').value) : undefined,
+            wifeShare: txType === 'income' ? parseFloat(document.getElementById('wifeShareInput').value) : undefined
+        });
+
+        hideAllModals();
+        refreshUI();
+
+        // Restore original form handler
+        setupForms();
+    });
+
+    showModal(document.getElementById('transactionModal'));
+}
+
+function editInvestment(id) {
+    const investments = StorageManager.getInvestments();
+    const inv = investments.find(i => i.id === id);
+    if (!inv) return;
+
+    // Pre-fill form
+    document.getElementById('investAmountInput').value = inv.amount;
+    document.getElementById('investDateInput').value = inv.date;
+    document.getElementById('investNoteInput').value = inv.note || '';
+    document.getElementById('investorType').value = inv.investor;
+
+    // Select investor button
+    document.querySelectorAll('.investor-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.investor-btn[data-investor="${inv.investor}"]`)?.classList.add('active');
+
+    // Modify form submit handler
+    const form = document.getElementById('investmentForm');
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById('investAmountInput').value);
+        if (!amount) {
+            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
+
+        StorageManager.updateInvestment(id, {
+            amount: amount,
+            investor: document.getElementById('investorType').value,
+            date: document.getElementById('investDateInput').value,
+            note: document.getElementById('investNoteInput').value
+        });
+
+        hideAllModals();
+        refreshUI();
+
+        // Restore original form handler
+        setupForms();
+    });
+
+    showModal(document.getElementById('investmentModal'));
 }

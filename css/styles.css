@@ -36,6 +36,43 @@
     --border-dashed: 2px dashed #E0E0E0;
 }
 
+/* Dark Mode Colors */
+body.dark-mode {
+    --bg-cream: #1A1A2E;
+    --bg-pink-soft: #2D2D44;
+    --card-white: #252541;
+
+    --primary-pink: #FF8A9B;
+    --secondary-mint: #6EC1A0;
+    --accent-purple: #B4C7A4;
+    --pop-peach: #FFB088;
+
+    --text-choco: #E8E8F0;
+    --text-soft: #B8B8C8;
+
+    --color-income: #4DB88E;
+    --color-expense: #FF7B8A;
+    --color-inv: #7BA3D9;
+
+    --shadow-soft: 0 8px 16px rgba(0, 0, 0, 0.3);
+    --border-dashed: 2px dashed #3A3A52;
+}
+
+body.dark-mode::before {
+    background-image: radial-gradient(var(--bg-pink-soft) 10%, transparent 11%);
+    opacity: 0.3;
+}
+
+body.dark-mode .emoji-grid {
+    background: #2D2D44;
+}
+
+body.dark-mode .btn-cancel {
+    background: #3A3A52;
+    border-color: #4A4A62;
+    color: var(--text-choco);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -357,6 +394,44 @@ body::before {
     color: var(--color-expense);
 }
 
+/* === ACTION BUTTONS === */
+.tx-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.action-btn {
+    background: var(--bg-cream);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+.edit-btn:hover {
+    background: var(--secondary-mint);
+}
+
+.delete-btn:hover {
+    background: var(--color-expense);
+}
+
 /* === BOTTOM NAV (Notebook Tabs) === */
 .bottom-nav {
     position: fixed;
@@ -609,7 +684,7 @@ body::before {
 /* Utils */
 .page {
     display: none;
-    padding-bottom: 20px;
+    padding-bottom: 120px;
     animation: fadeIn 0.3s;
 }
 
@@ -643,4 +718,148 @@ body::before {
     display: block;
     margin-bottom: 10px;
     opacity: 0.5;
+}
+
+/* === CUSTOM CUTE MODALS === */
+.custom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(255, 183, 178, 0.3);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.custom-modal.active {
+    display: flex;
+    animation: fadeInScale 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes fadeInScale {
+    from {
+        transform: scale(0.7) translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.custom-modal-box {
+    background: linear-gradient(135deg, #FFF9F5, #FFFFFF);
+    width: 100%;
+    max-width: 320px;
+    border-radius: 28px;
+    padding: 25px;
+    box-shadow: 0 10px 40px rgba(233, 30, 99, 0.2),
+                0 0 0 4px #FFF,
+                0 0 0 6px #FFB7B2;
+    position: relative;
+    text-align: center;
+}
+
+.cute-pig-header {
+    font-size: 4rem;
+    margin: -50px auto 0;
+    animation: pigBounce 1s infinite ease-in-out;
+}
+
+@keyframes pigBounce {
+    0%, 100% {
+        transform: translateY(0) rotate(-3deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(3deg);
+    }
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #E91E63, #FF6090);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
+}
+
+.btn-confirm:active {
+    transform: translateY(0);
+}
+
+.btn-cancel {
+    background: var(--bg-cream);
+    color: var(--text-choco);
+    border: 2px solid #E0E0E0;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-cancel:hover {
+    background: #E0E0E0;
+    transform: translateY(-2px);
+}
+
+.btn-cancel:active {
+    transform: translateY(0);
+}
+
+/* Loading Overlay with Cute Pig */
+#loadingOverlay {
+    background: linear-gradient(135deg, rgba(255, 183, 178, 0.95), rgba(255, 224, 178, 0.95));
+    backdrop-filter: blur(10px);
+}
+
+#loadingOverlay::before {
+    content: '🐷';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8rem;
+    animation: pigSpin 2s infinite ease-in-out;
+}
+
+@keyframes pigSpin {
+    0%, 100% {
+        transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translate(-50%, -60%) rotate(10deg) scale(1.1);
+    }
+    50% {
+        transform: translate(-50%, -50%) rotate(-10deg) scale(1);
+    }
+    75% {
+        transform: translate(-50%, -40%) rotate(10deg) scale(1.1);
+    }
+}
+
+#loadingOverlay p {
+    position: absolute;
+    top: calc(50% + 100px);
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--primary-pink);
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
 }

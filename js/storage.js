@@ -78,6 +78,53 @@ const StorageManager = {
         this.triggerSync();
     },
 
+    // --- Delete/Update Methods ---
+    deleteTransaction(id) {
+        let list = this.getTransactions();
+        list = list.filter(t => t.id !== id);
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(list));
+        this.triggerSync();
+        return list;
+    },
+
+    updateTransaction(id, updatedData) {
+        const list = this.getTransactions();
+        const index = list.findIndex(t => t.id === id);
+        if (index !== -1) {
+            list[index] = { ...list[index], ...updatedData };
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(list));
+            this.triggerSync();
+        }
+        return list;
+    },
+
+    deleteInvestment(id) {
+        let list = this.getInvestments();
+        list = list.filter(i => i.id !== id);
+        localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(list));
+        this.triggerSync();
+        return list;
+    },
+
+    updateInvestment(id, updatedData) {
+        const list = this.getInvestments();
+        const index = list.findIndex(i => i.id === id);
+        if (index !== -1) {
+            list[index] = { ...list[index], ...updatedData };
+            localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(list));
+            this.triggerSync();
+        }
+        return list;
+    },
+
+    deleteCostWithdrawal(id) {
+        let list = this.getCostWithdrawals();
+        list = list.filter(w => w.id !== id);
+        localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(list));
+        this.triggerSync();
+        return list;
+    },
+
     // --- Custom Categories ---
     getCustomCategories() {
         return JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_CATEGORIES) || '[]');

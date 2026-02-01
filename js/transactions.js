@@ -52,6 +52,7 @@ const TransactionsManager = {
     getCostReserve() {
         const transactions = StorageManager.getTransactions();
         const withdrawals = StorageManager.getCostWithdrawals();
+        const investments = StorageManager.getInvestments();
         const settings = StorageManager.getSettings();
         const costPercent = settings.costPercent || 30;
 
@@ -60,61 +61,94 @@ const TransactionsManager = {
             .filter(t => t.type === 'income' && t.deductCost === true)
             .reduce((sum, t) => sum + (parseFloat(t.amount || 0) * costPercent / 100), 0);
 
+        // คำนวณยอดลงทุนรวม
+        const totalInvestments = investments
+            .reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
+
         // คำนวณยอดถอนออก
         const totalWithdrawn = withdrawals.reduce((sum, w) => sum + parseFloat(w.amount || 0), 0);
 
         return {
             totalDeducted,      // ยอดหักสะสม
+            totalInvestments,   // ยอดลงทุนรวม
             totalWithdrawn,     // ยอดถอนออก
-            balance: totalDeducted - totalWithdrawn,  // ยอดคงเหลือ
+            balance: totalDeducted + totalInvestments - totalWithdrawn,  // ยอดคงเหลือ (รวมเงินลงทุน)
             costPercent,
             withdrawals
         };
     },
 
     /**
-     * คำนวณส่วนแบ่งกำไร
-     * = รายรับ - ต้นทุนที่หัก (ถ้าหัก) แล้วแบ่งตามสัดส่วน
+     * คำนวณส่วนแบ่งกำไร (รองรับเปอร์เซ็นต์แยกรายการและฟิลเตอร์เดือน)
+     * = รายรับ - ต้นทุนที่หัก (ถ้าหัก) แล้วแบ่งตามสัดส่วนที่กำหนดในแต่ละรายการ
      */
-    getProfitShare() {
+    getProfitShare(monthFilter = null) {
         const transactions = StorageManager.getTransactions();
         const settings = StorageManager.getSettings();
         const costPercent = settings.costPercent || 30;
-        const husbandPct = settings.husbandShare || 50;
-        const wifePct = settings.wifeShare || 50;
 
-        // คำนวณกำไรหลังหักต้นทุน
+        // Filter by month if provided
+        let filteredTxs = transactions;
+        if (monthFilter) {
+            const [year, month] = monthFilter.split('-');
+            filteredTxs = transactions.filter(t => {
+                const d = new Date(t.date);
+                return d.getFullYear() == year && (d.getMonth() + 1) == month;
+            });
+        }
+
+        let husbandTotal = 0;
+        let wifeTotal = 0;
         let totalProfit = 0;
-        transactions.filter(t => t.type === 'income').forEach(t => {
+
+        // Calculate per-transaction profit shares
+        filteredTxs.filter(t => t.type === 'income').forEach(t => {
             const amount = parseFloat(t.amount || 0);
+            let profitAmount = amount;
+
+            // Deduct cost if applicable
             if (t.deductCost === true) {
-                // หักต้นทุน 30% -> กำไร 70%
-                totalProfit += amount * (100 - costPercent) / 100;
-            } else {
-                // ไม่หักต้นทุน -> กำไรเต็ม
-                totalProfit += amount;
+                profitAmount = amount * (100 - costPercent) / 100;
             }
+
+            totalProfit += profitAmount;
+
+            // Use per-transaction percentages (default to global settings if not set)
+            const hShare = t.husbandShare ?? settings.husbandShare ?? 50;
+            const wShare = t.wifeShare ?? settings.wifeShare ?? 50;
+
+            husbandTotal += profitAmount * hShare / 100;
+            wifeTotal += profitAmount * wShare / 100;
         });
 
-        // หักรายจ่าย
-        const totalExpense = transactions
+        // Deduct expenses
+        const totalExpense = filteredTxs
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
         const netProfit = totalProfit - totalExpense;
-        const positiveProfit = Math.max(0, netProfit); // ถ้าติดลบให้เป็น 0
+
+        // Split net profit proportionally
+        const totalShares = husbandTotal + wifeTotal;
+        let finalHusbandProfit = 0;
+        let finalWifeProfit = 0;
+
+        if (totalShares > 0 && netProfit > 0) {
+            finalHusbandProfit = netProfit * (husbandTotal / totalShares);
+            finalWifeProfit = netProfit * (wifeTotal / totalShares);
+        }
 
         return {
-            totalProfit,        // กำไรก่อนหักรายจ่ายทั่วไป
+            totalProfit,
             totalExpense,
-            netProfit,          // กำไรสุทธิ
+            netProfit,
             husband: {
-                share: husbandPct,
-                amount: positiveProfit * husbandPct / 100
+                share: totalShares > 0 ? Math.round(husbandTotal / totalShares * 100) : 50,
+                amount: Math.max(0, finalHusbandProfit)
             },
             wife: {
-                share: wifePct,
-                amount: positiveProfit * wifePct / 100
+                share: totalShares > 0 ? Math.round(wifeTotal / totalShares * 100) : 50,
+                amount: Math.max(0, finalWifeProfit)
             }
         };
     },

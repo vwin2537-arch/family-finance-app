@@ -70,7 +70,12 @@
                 <div class="brand-badge">🏡 Family Biz</div>
                 <div id="syncStatus" style="font-size:0.7rem; color:#aaa; margin-left:10px;">⚪ รอเชื่อมต่อ...</div>
             </div>
-            <button class="btn-circle" id="settingsBtn">⚙️</button>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-circle" id="themeToggleBtn" title="สลับธีม">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <button class="btn-circle" id="settingsBtn">⚙️</button>
+            </div>
         </header>
 
         <main>
@@ -147,6 +152,11 @@
                     <input type="month" id="allFilterDate" class="input-cute"
                         style="width:auto; padding:5px 10px; margin:0; font-size:0.9rem;">
                 </div>
+                <!-- Search Box -->
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="searchInput" class="input-cute" placeholder="🔍 ค้นหารายการ (ชื่อ, จำนวนเงิน, หมายเหตุ)..."
+                        style="margin:0;">
+                </div>
                 <div id="allTransactions" class="tx-list"></div>
             </section>
 
@@ -188,7 +198,11 @@
                 </div>
 
                 <!-- Profit Sharing Stats -->
-                <div class="section-title" style="margin-top:20px;"><span>💰 ส่วนแบ่งกำไร</span></div>
+                <div class="section-title" style="margin-top:20px;">
+                    <span>💰 ส่วนแบ่งกำไร</span>
+                    <input type="month" id="profitFilterDate" class="input-cute"
+                        style="width:auto; padding:5px 10px; margin:0; font-size:0.9rem;">
+                </div>
                 <div class="investor-card" style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9);">
                     <div class="person" style="flex:1;">
                         <div class="avatar-circle">👨</div>
@@ -287,6 +301,28 @@
                     </label>
                 </div>
 
+                <!-- Profit Sharing Percentages (Only for Income) -->
+                <div id="profitShareRow" style="display:none; margin:10px 0; padding:10px; background:#E8F5E9; border-radius:12px;">
+                    <p style="text-align:center; font-weight:600; margin-bottom:8px;">💰 ส่วนแบ่งกำไร</p>
+                    <div style="display:flex; gap:10px; align-items:center; justify-content:center;">
+                        <div style="flex:1; text-align:center;">
+                            <label style="display:block; font-size:0.9rem; margin-bottom:4px;">👨 สามี</label>
+                            <input type="number" id="husbandShareInput" class="input-cute" value="50" min="0" max="100"
+                                style="text-align:center; width:100%;" oninput="updateWifeShare()">
+                            <span style="font-size:0.9rem;">%</span>
+                        </div>
+                        <div style="flex:1; text-align:center;">
+                            <label style="display:block; font-size:0.9rem; margin-bottom:4px;">👩 ภรรยา</label>
+                            <input type="number" id="wifeShareInput" class="input-cute" value="50" min="0" max="100"
+                                style="text-align:center; width:100%;" oninput="updateHusbandShare()">
+                            <span style="font-size:0.9rem;">%</span>
+                        </div>
+                    </div>
+                    <p style="text-align:center; font-size:0.85rem; color:#666; margin-top:5px;">
+                        รวม: <span id="totalShareDisplay">100</span>%
+                    </p>
+                </div>
+
                 <p style="text-align:center; font-size:0.9rem; margin-top:10px;">เลือกหมวดหมู่ 👇</p>
                 <div class="cat-grid" id="categoryGrid"></div>
                 <input type="date" id="dateInput" class="input-cute">
@@ -335,22 +371,8 @@
             <label>📉 หักต้นทุน (%)</label>
             <input type="number" id="costPercentInput" class="input-cute" value="30" min="0" max="100">
 
-            <div style="margin-top:15px;">
-                <label>💰 สัดส่วนแบ่งกำไร</label>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:5px;">
-                    <div style="text-align:center;">
-                        <span>👨 สามี</span>
-                        <input type="number" id="husbandShareInput" class="input-cute" value="50" min="0" max="100"
-                            style="text-align:center;">
-                        <small>%</small>
-                    </div>
-                    <div style="text-align:center;">
-                        <span>👩 ภรรยา</span>
-                        <input type="number" id="wifeShareInput" class="input-cute" value="50" min="0" max="100"
-                            style="text-align:center;">
-                        <small>%</small>
-                    </div>
-                </div>
+            <div style="margin-top:15px; padding:12px; background:#E8F5E9; border-radius:12px; text-align:center;">
+                <small style="color:#388E3C;">💡 สัดส่วนแบ่งกำไรสามารถกำหนดแยกในแต่ละรายรับได้เลย</small>
             </div>
 
             <div class="divider"></div>
@@ -412,6 +434,45 @@
                 <input type="text" id="withdrawNote" class="input-cute" placeholder="หมายเหตุ (เช่น ซื้อวัตถุดิบ)...">
                 <button type="submit" class="btn-save" style="background:#FB8C00;">ถอนเงิน</button>
             </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM PASSWORD MODAL -->
+    <div class="custom-modal" id="passwordModal">
+        <div class="custom-modal-box">
+            <div class="cute-pig-header">🐷</div>
+            <h3 style="text-align: center; margin: 15px 0; color: #E91E63;">กรุณาใส่รหัสผ่าน</h3>
+            <input type="password" id="passwordInput" class="input-cute" placeholder="รหัส 4 หลัก" maxlength="4"
+                style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-cancel" onclick="cancelPasswordModal()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="submitPasswordModal()">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM ALERT MODAL -->
+    <div class="custom-modal" id="alertModal">
+        <div class="custom-modal-box">
+            <div class="cute-pig-header">🐷</div>
+            <h3 id="alertTitle" style="text-align: center; margin: 15px 0;"></h3>
+            <p id="alertMessage" style="text-align: center; color: #666; margin: 10px 0;"></p>
+            <button class="btn-confirm" onclick="closeAlertModal()" style="width: 100%; margin-top: 15px;">
+                ตกลง
+            </button>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM MODAL -->
+    <div class="custom-modal" id="confirmModal">
+        <div class="custom-modal-box">
+            <div class="cute-pig-header">🐷</div>
+            <h3 id="confirmTitle" style="text-align: center; margin: 15px 0;"></h3>
+            <p id="confirmMessage" style="text-align: center; color: #666; margin: 10px 0;"></p>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-cancel" onclick="cancelConfirmModal()">ยกเลิก</button>
+                <button class="btn-confirm" onclick="acceptConfirmModal()">ยืนยัน</button>
+            </div>
         </div>
     </div>
 
