@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-biz-v5';
+const CACHE_NAME = 'family-biz-v6';
 const ASSETS = [
     './',
     'index.html',

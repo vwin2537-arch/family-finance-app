@@ -10,6 +10,7 @@
     --bg-cream: #FFF9F0;
     --bg-pink-soft: #FFE5E5;
     --card-white: #FFFFFF;
+    --border-contrast: #FFFFFF;
 
     /* Main Colors */
     --primary-pink: #FFB7B2;
@@ -41,6 +42,7 @@ body.dark-mode {
     --bg-cream: #1A1A2E;
     --bg-pink-soft: #2D2D44;
     --card-white: #252541;
+    --border-contrast: #3A3A52;
 
     --primary-pink: #FF8A9B;
     --secondary-mint: #6EC1A0;
@@ -126,7 +128,7 @@ body::before {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--primary-pink);
-    border: 2px solid white;
+    border: 2px solid var(--border-contrast);
 }
 
 .btn-circle {
@@ -152,7 +154,7 @@ body::before {
     border-radius: 32px;
     text-align: center;
     box-shadow: var(--shadow-soft);
-    border: 4px solid white;
+    border: 4px solid var(--border-contrast);
     margin-bottom: 24px;
     position: relative;
     overflow: hidden;
@@ -518,7 +520,7 @@ body::before {
     padding: 24px;
     box-shadow: var(--shadow-soft);
     position: relative;
-    border: 4px solid #fff;
+    border: 4px solid var(--border-contrast);
 }
 
 .close-bubble {
@@ -627,7 +629,7 @@ body::before {
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
-    border: 2px solid white;
+    border: 2px solid var(--border-contrast);
     box-shadow: 0 0 0 4px var(--bg-cream);
     /* Double border illusion */
 }
@@ -774,7 +776,7 @@ body::before {
     border-radius: 28px;
     padding: 25px;
     box-shadow: 0 10px 40px rgba(233, 30, 99, 0.2),
-        0 0 0 4px #FFF,
+        0 0 0 4px var(--border-contrast),
         0 0 0 6px #FFB7B2;
     position: relative;
     text-align: center;
@@ -844,48 +846,4 @@ body::before {
 }
 
 /* Loading Overlay with Cute Pig */
-#loadingOverlay {
-    background: linear-gradient(135deg, rgba(255, 183, 178, 0.95), rgba(255, 224, 178, 0.95));
-    backdrop-filter: blur(10px);
-}
-
-#loadingOverlay::before {
-    content: '🐷';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 8rem;
-    animation: pigSpin 2s infinite ease-in-out;
-}
-
-@keyframes pigSpin {
-
-    0%,
-    100% {
-        transform: translate(-50%, -50%) rotate(0deg) scale(1);
-    }
-
-    25% {
-        transform: translate(-50%, -60%) rotate(10deg) scale(1.1);
-    }
-
-    50% {
-        transform: translate(-50%, -50%) rotate(-10deg) scale(1);
-    }
-
-    75% {
-        transform: translate(-50%, -40%) rotate(10deg) scale(1.1);
-    }
-}
-
-#loadingOverlay p {
-    position: absolute;
-    top: calc(50% + 100px);
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--primary-pink);
-    font-weight: 700;
-    font-size: 1.2rem;
-    text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
-}
+/* Loading Styles Moved to Main Block (removed duplicate pig) */
