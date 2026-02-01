@@ -35,30 +35,33 @@
     --radius-m: 16px;
     --shadow-soft: 0 8px 16px rgba(93, 91, 106, 0.08);
     --border-dashed: 2px dashed #E0E0E0;
+
+    --bg-inc: #F0FFF9;
+    --bg-exp: #FFF5F5;
 }
 
 /* Dark Mode Colors */
 body.dark-mode {
-    --bg-cream: #1A1A2E;
-    --bg-pink-soft: #2D2D44;
-    --card-white: #252541;
-    --border-contrast: #3A3A52;
+    --bg-cream: #121212;
+    --bg-pink-soft: #1E1E1E;
+    --card-white: #2C2C2C;
+    --border-contrast: #424242;
 
     --primary-pink: #FF8A9B;
-    --secondary-mint: #6EC1A0;
+    --secondary-mint: #4DB88E;
     --accent-purple: #B4C7A4;
     --pop-peach: #FFB088;
 
-    --text-choco: #E8E8F0;
-    --text-soft: #B8B8C8;
+    --text-choco: #F0F0F0;
+    --text-soft: #A0A0A0;
 
-    --color-income: #4DB88E;
-    --color-expense: #FF7B8A;
-    --color-inv: #7BA3D9;
+    --bg-inc: rgba(77, 184, 142, 0.15);
+    --bg-exp: rgba(255, 123, 138, 0.15);
 
-    --shadow-soft: 0 8px 16px rgba(0, 0, 0, 0.3);
-    --border-dashed: 2px dashed #3A3A52;
+    --shadow-soft: 0 8px 20px rgba(0, 0, 0, 0.4);
+    --border-dashed: 2px dashed #444;
 }
+
 
 body.dark-mode::before {
     background-image: radial-gradient(var(--bg-pink-soft) 10%, transparent 11%);
@@ -213,13 +216,14 @@ body::before {
 
 .stat-pill.inc {
     border-color: var(--secondary-mint);
-    background: #F0FFF9;
+    background: var(--bg-inc);
 }
 
 .stat-pill.exp {
     border-color: var(--primary-pink);
-    background: #FFF5F5;
+    background: var(--bg-exp);
 }
+
 
 .pill-icon {
     font-size: 1.5rem;
