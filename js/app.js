@@ -897,80 +897,88 @@ function setupSettings() {
 
 // ===== EDIT FUNCTIONS =====
 function editTransaction(id) {
-    const transactions = StorageManager.getTransactions();
-    const tx = transactions.find(t => t.id === id);
-    if (!tx) return;
+    try {
+        const transactions = StorageManager.getTransactions();
+        const tx = transactions.find(t => t.id === id);
+        if (!tx) return;
 
-    // Pre-fill form
-    document.getElementById('transactionType').value = tx.type;
-    document.getElementById('amountInput').value = tx.amount;
-    document.getElementById('dateInput').value = tx.date;
-    document.getElementById('descriptionInput').value = tx.description || '';
+        // 1. Setup UI (Reset fields)
+        setTxType(tx.type);
 
-    // Set modal title
-    document.getElementById('modalTitle').textContent = tx.type === 'income' ? 'แก้ไขรายรับ' : 'แก้ไขรายจ่าย';
+        // 2. Pre-fill form (Overwrite with existing data)
+        document.getElementById('transactionType').value = tx.type;
+        document.getElementById('amountInput').value = tx.amount;
+        document.getElementById('dateInput').value = tx.date; // Critical: Ensure original date is kept
+        document.getElementById('descriptionInput').value = tx.description || '';
 
-    // Load categories and select current one
-    setTxType(tx.type);
-    setTimeout(() => {
-        const catBtn = document.querySelector(`#categoryGrid .cat-sticker[data-id="${tx.category}"]`);
-        if (catBtn) {
-            document.querySelectorAll('#categoryGrid .cat-sticker').forEach(el => el.classList.remove('active'));
-            catBtn.classList.add('active');
-        }
-    }, 50);
-
-    // Set deductCost and profit shares if income
-    if (tx.type === 'income') {
-        document.getElementById('deductCostCheck').checked = tx.deductCost || false;
-        document.getElementById('husbandShareInput').value = tx.husbandShare ?? 50;
-        document.getElementById('wifeShareInput').value = tx.wifeShare ?? 50;
-    }
-
-    // Modify form submit handler to update instead of add
-    const form = document.getElementById('transactionForm');
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-
-    newForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const amount = parseFloat(document.getElementById('amountInput').value);
-        if (!amount) {
-            await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
-            return;
+        // Pre-fill Special Fields (Income)
+        if (tx.type === 'income') {
+            document.getElementById('deductCostCheck').checked = tx.deductCost || false;
+            document.getElementById('husbandShareInput').value = tx.husbandShare ?? 50;
+            document.getElementById('wifeShareInput').value = tx.wifeShare ?? 50;
+            // Trigger shear calculations if needed? No, inputs handle logic.
         }
 
-        const txType = document.getElementById('transactionType').value;
-        const deductCost = txType === 'income' ? document.getElementById('deductCostCheck')?.checked : false;
+        // Select Category (Delayed to allow render)
+        setTimeout(() => {
+            const catBtn = document.querySelector(`#categoryGrid .cat-sticker[data-id="${tx.category}"]`);
+            if (catBtn) {
+                document.querySelectorAll('#categoryGrid .cat-sticker').forEach(el => el.classList.remove('active'));
+                catBtn.classList.add('active');
+            }
+        }, 50);
 
-        // Verify Password before saving
-        const pwd = await showPasswordModal();
-        if (pwd !== '1120') {
-            await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
-            return;
-        }
 
-        StorageManager.updateTransaction(id, {
 
-            type: txType,
-            amount: amount,
-            category: document.querySelector('#categoryGrid .cat-sticker.active')?.dataset.id || 'other',
-            date: document.getElementById('dateInput').value,
-            description: document.getElementById('descriptionInput').value,
-            deductCost: deductCost,
-            husbandShare: txType === 'income' ? parseFloat(document.getElementById('husbandShareInput').value) : undefined,
-            wifeShare: txType === 'income' ? parseFloat(document.getElementById('wifeShareInput').value) : undefined
+        // Modify form submit handler to update instead of add
+        const form = document.getElementById('transactionForm');
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        newForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('amountInput').value);
+            if (!amount) {
+                await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+                return;
+            }
+
+            const txType = document.getElementById('transactionType').value;
+            const deductCost = txType === 'income' ? document.getElementById('deductCostCheck')?.checked : false;
+
+            // Verify Password before saving
+            const pwd = await showPasswordModal();
+            if (pwd !== '1120') {
+                await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
+                return;
+            }
+
+            StorageManager.updateTransaction(id, {
+
+                type: txType,
+                amount: amount,
+                category: document.querySelector('#categoryGrid .cat-sticker.active')?.dataset.id || 'other',
+                date: document.getElementById('dateInput').value,
+                description: document.getElementById('descriptionInput').value,
+                deductCost: deductCost,
+                husbandShare: txType === 'income' ? parseFloat(document.getElementById('husbandShareInput').value) : undefined,
+                wifeShare: txType === 'income' ? parseFloat(document.getElementById('wifeShareInput').value) : undefined
+            });
+
+            hideAllModals();
+            refreshUI();
+
+            // Restore original form handler
+            setupForms();
         });
 
-        hideAllModals();
-        refreshUI();
-
-        // Restore original form handler
-        setupForms();
-    });
-
-    showModal(document.getElementById('transactionModal'));
+        showModal(document.getElementById('transactionModal'));
+    } catch (e) {
+        console.error(e);
+        alert('เกิดข้อผิดพลาด: ' + e.message);
+    }
 }
+
 
 function editInvestment(id) {
     const investments = StorageManager.getInvestments();
