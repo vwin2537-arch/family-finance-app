@@ -121,10 +121,11 @@ const TransactionsManager = {
             wifeTotal += profitAmount * wShare / 100;
         });
 
-        // Deduct expenses
+        // Deduct expenses (EXCLUDING Fund Withdrawals as per user request)
         const totalExpense = filteredTxs
-            .filter(t => t.type === 'expense')
+            .filter(t => t.type === 'expense' && !t.isFundWithdrawal && t.category !== 'withdrawal')
             .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
 
         const netProfit = totalProfit - totalExpense;
 
