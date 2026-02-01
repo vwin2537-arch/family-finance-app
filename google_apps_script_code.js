@@ -99,6 +99,14 @@ function setupSheets(ss) {
         var sh2 = ss.insertSheet('Investments');
         sh2.appendRow(['id', 'date', 'investor', 'amount', 'note', 'timestamp']);
     }
+    if (!ss.getSheetByName('Withdrawals')) {
+        var shW = ss.insertSheet('Withdrawals');
+        shW.appendRow(['id', 'date', 'amount', 'note', 'timestamp']);
+    }
+    if (!ss.getSheetByName('CustomCategories')) {
+        var shC = ss.insertSheet('CustomCategories');
+        shC.appendRow(['id', 'name', 'icon', 'type']);
+    }
     if (!ss.getSheetByName('Settings')) {
         var sh3 = ss.insertSheet('Settings');
         sh3.appendRow(['Key', 'Value']);
@@ -113,6 +121,8 @@ function getAllData(ss) {
     return {
         transactions: sheetToObjects(ss.getSheetByName('Transactions')),
         investments: sheetToObjects(ss.getSheetByName('Investments')),
+        withdrawals: sheetToObjects(ss.getSheetByName('Withdrawals')),
+        customCategories: sheetToObjects(ss.getSheetByName('CustomCategories')),
         settings: settingsToObject(ss.getSheetByName('Settings'))
     };
 }
@@ -120,8 +130,11 @@ function getAllData(ss) {
 function saveAllData(ss, data) {
     if (data.transactions) overwriteSheet(ss, 'Transactions', data.transactions, ['id', 'date', 'type', 'category', 'amount', 'description', 'deductCost', 'husbandShare', 'wifeShare', 'timestamp']);
     if (data.investments) overwriteSheet(ss, 'Investments', data.investments, ['id', 'date', 'investor', 'amount', 'note', 'timestamp']);
+    if (data.withdrawals) overwriteSheet(ss, 'Withdrawals', data.withdrawals, ['id', 'date', 'amount', 'note', 'timestamp']);
+    if (data.customCategories) overwriteSheet(ss, 'CustomCategories', data.customCategories, ['id', 'name', 'icon', 'type']);
     if (data.settings) updateSettingsSheet(ss, data.settings);
 }
+
 
 // --- Helpers ---
 

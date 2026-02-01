@@ -194,6 +194,8 @@ const StorageManager = {
             if (result && result.status !== 'error') {
                 if (result.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(result.transactions));
                 if (result.investments) localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(result.investments));
+                if (result.withdrawals) localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(result.withdrawals));
+                if (result.customCategories) localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(result.customCategories));
                 if (result.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(result.settings));
                 return { status: 'success' };
             } else {
@@ -213,12 +215,12 @@ const StorageManager = {
         const payload = {
             transactions: this.getTransactions(),
             investments: this.getInvestments(),
+            withdrawals: this.getCostWithdrawals(),
+            customCategories: this.getCustomCategories(),
             settings: this.getSettings()
         };
 
         try {
-            // Google Apps Script ต้องใช้ POST แบบ no-cors หรือ text/plain ในบางกรณี
-            // แต่ปกติ fetch มาตรฐาน works ถ้า GAS ตั้งค่า Web App correct
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 redirect: 'follow',
@@ -231,6 +233,7 @@ const StorageManager = {
             return { status: 'error', message: error.message };
         }
     },
+
 
     // Debounced Sync Helper
     // Debounced Sync Helper
