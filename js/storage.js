@@ -228,11 +228,33 @@ const StorageManager = {
             const result = await response.json();
 
             if (result && result.status !== 'error') {
-                if (result.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(result.transactions));
-                if (result.investments) localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(result.investments));
-                if (result.withdrawals) localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(result.withdrawals));
-                if (result.customCategories) localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(result.customCategories));
+                // Fix: Ensure all IDs are Strings to prevent delete/edit bugs
+                if (result.transactions) {
+                    const txs = result.transactions.map(t => ({
+                        ...t,
+                        id: String(t.id),
+                        linkedWithdrawalId: t.linkedWithdrawalId ? String(t.linkedWithdrawalId) : undefined
+                    }));
+                    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+                }
+
+                if (result.investments) {
+                    const invs = result.investments.map(i => ({ ...i, id: String(i.id) }));
+                    localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(invs));
+                }
+
+                if (result.withdrawals) {
+                    const ws = result.withdrawals.map(w => ({ ...w, id: String(w.id) }));
+                    localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(ws));
+                }
+
+                if (result.customCategories) {
+                    const cats = result.customCategories.map(c => ({ ...c, id: String(c.id) }));
+                    localStorage.setItem(STORAGE_KEYS.CUSTOM_CATEGORIES, JSON.stringify(cats));
+                }
+
                 if (result.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(result.settings));
+
                 return { status: 'success' };
             } else {
                 throw new Error(result.message || 'Unknown cloud error');
