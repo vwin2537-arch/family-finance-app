@@ -774,12 +774,8 @@ function setupForms() {
             const id = btn.dataset.id;
             const type = btn.dataset.type;
 
-            // Check password first
-            const isValidPassword = await verifyPassword();
-            if (!isValidPassword) {
-                await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
-                return;
-            }
+            // Password check moved to save button
+
 
             if (type === 'transaction') {
                 editTransaction(id);
@@ -947,7 +943,15 @@ function editTransaction(id) {
         const txType = document.getElementById('transactionType').value;
         const deductCost = txType === 'income' ? document.getElementById('deductCostCheck')?.checked : false;
 
+        // Verify Password before saving
+        const pwd = await showPasswordModal();
+        if (pwd !== '1120') {
+            await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
+            return;
+        }
+
         StorageManager.updateTransaction(id, {
+
             type: txType,
             amount: amount,
             category: document.querySelector('#categoryGrid .cat-sticker.active')?.dataset.id || 'other',
@@ -993,6 +997,13 @@ function editInvestment(id) {
         const amount = parseFloat(document.getElementById('investAmountInput').value);
         if (!amount) {
             await showAlert('⚠️ กรอกข้อมูลไม่ครบ', 'กรุณาใส่จำนวนเงิน');
+            return;
+        }
+
+        // Verify Password before saving
+        const pwd = await showPasswordModal();
+        if (pwd !== '1120') {
+            await showAlert('❌ รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้ง');
             return;
         }
 
