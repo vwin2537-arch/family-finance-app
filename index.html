@@ -48,19 +48,24 @@
 <body onload="document.body.classList.add('loaded')">
 
     <!-- Loading Screen -->
+    <!-- Loading Screen -->
     <div id="loadingOverlay" class="loading-screen">
-        <div class="bouncing-pig">🐷</div>
-        <p style="margin-top: 10px; color: #FFB7B2; font-weight: 700;">กำลังโหลดแป๊บนึงน้า...</p>
+        <div class="loading-content">
+            <div class="bouncing-pig">🐷</div>
+            <p class="loading-text">กำลังโหลดแป๊บนึงน้า...</p>
+        </div>
     </div>
     <script>
+        // Failsafe: Hide loader after 5s max
         setTimeout(() => {
             const el = document.getElementById('loadingOverlay');
-            if (el && getComputedStyle(el).opacity !== '0') {
+            if (el && !el.classList.contains('hidden')) {
                 el.classList.add('hidden');
                 setTimeout(() => el.style.display = 'none', 500);
             }
         }, 5000);
     </script>
+
 
     <div class="app-container">
 
@@ -154,8 +159,8 @@
                 </div>
                 <!-- Search Box -->
                 <div style="margin-bottom:15px;">
-                    <input type="text" id="searchInput" class="input-cute" placeholder="🔍 ค้นหารายการ (ชื่อ, จำนวนเงิน, หมายเหตุ)..."
-                        style="margin:0;">
+                    <input type="text" id="searchInput" class="input-cute"
+                        placeholder="🔍 ค้นหารายการ (ชื่อ, จำนวนเงิน, หมายเหตุ)..." style="margin:0;">
                 </div>
                 <div id="allTransactions" class="tx-list"></div>
             </section>
@@ -302,7 +307,8 @@
                 </div>
 
                 <!-- Profit Sharing Percentages (Only for Income) -->
-                <div id="profitShareRow" style="display:none; margin:10px 0; padding:10px; background:#E8F5E9; border-radius:12px;">
+                <div id="profitShareRow"
+                    style="display:none; margin:10px 0; padding:10px; background:#E8F5E9; border-radius:12px;">
                     <p style="text-align:center; font-weight:600; margin-bottom:8px;">💰 ส่วนแบ่งกำไร</p>
                     <div style="display:flex; gap:10px; align-items:center; justify-content:center;">
                         <div style="flex:1; text-align:center;">

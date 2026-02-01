@@ -660,6 +660,23 @@ body::before {
     align-items: center;
 }
 
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    /* Better spacing */
+}
+
+.loading-text {
+    color: var(--primary-pink);
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-align: center;
+    white-space: nowrap;
+    /* Prevent wrapping */
+}
+
 .loading-screen.hidden {
     opacity: 0;
     pointer-events: none;
@@ -743,6 +760,7 @@ body::before {
         transform: scale(0.7) translateY(-20px);
         opacity: 0;
     }
+
     to {
         transform: scale(1) translateY(0);
         opacity: 1;
@@ -756,8 +774,8 @@ body::before {
     border-radius: 28px;
     padding: 25px;
     box-shadow: 0 10px 40px rgba(233, 30, 99, 0.2),
-                0 0 0 4px #FFF,
-                0 0 0 6px #FFB7B2;
+        0 0 0 4px #FFF,
+        0 0 0 6px #FFB7B2;
     position: relative;
     text-align: center;
 }
@@ -769,9 +787,12 @@ body::before {
 }
 
 @keyframes pigBounce {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0) rotate(-3deg);
     }
+
     50% {
         transform: translateY(-10px) rotate(3deg);
     }
@@ -839,15 +860,20 @@ body::before {
 }
 
 @keyframes pigSpin {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(-50%, -50%) rotate(0deg) scale(1);
     }
+
     25% {
         transform: translate(-50%, -60%) rotate(10deg) scale(1.1);
     }
+
     50% {
         transform: translate(-50%, -50%) rotate(-10deg) scale(1);
     }
+
     75% {
         transform: translate(-50%, -40%) rotate(10deg) scale(1.1);
     }

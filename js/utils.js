@@ -17,8 +17,10 @@ const DEFAULT_CATEGORIES = {
         { id: 'ads', name: 'โฆษณา', icon: '📢' },
         { id: 'rent', name: 'ค่าเช่า', icon: '🏪' },
         { id: 'utility', name: 'ค่าน้ำ/ไฟ', icon: '💡' },
-        { id: 'other_out', name: 'อื่นๆ', icon: '📤' }
+        { id: 'withdrawal', name: 'ถอนเงินกองทุน', icon: '📤' },
+        { id: 'other_out', name: 'อื่นๆ', icon: '💸' }
     ]
+
 };
 
 window.DEFAULT_CATEGORIES = DEFAULT_CATEGORIES; // Backwards compatibility if needed

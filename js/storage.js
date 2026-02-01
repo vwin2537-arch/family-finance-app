@@ -155,16 +155,52 @@ const StorageManager = {
     },
 
     addCostWithdrawal(withdrawal) {
-        const list = this.getCostWithdrawals();
-        list.unshift({
-            id: Date.now().toString(),
+        // 1. Add to Withdrawals List (Data Source for Biz Page)
+        const wList = this.getCostWithdrawals();
+        const id = Date.now().toString();
+
+        const newWithdrawal = {
+            id: id,
             timestamp: new Date().toISOString(),
             ...withdrawal
+        };
+
+        wList.unshift(newWithdrawal);
+        localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(wList));
+
+        // 2. Add to Transactions List (as Expense)
+        this.addTransaction({
+            type: 'expense',
+            amount: withdrawal.amount,
+            category: 'withdrawal',
+            description: withdrawal.note || 'ถอนเงินจากกองทุน',
+            date: withdrawal.date,
+            isFundWithdrawal: true,
+            linkedWithdrawalId: id
         });
+
+        return wList;
+    },
+
+    deleteCostWithdrawal(id) {
+        // 1. Delete from Withdrawals List
+        let list = this.getCostWithdrawals();
+        list = list.filter(w => w.id !== id);
         localStorage.setItem(STORAGE_KEYS.COST_WITHDRAWALS, JSON.stringify(list));
+
+        // 2. Delete linked Transaction
+        let txList = this.getTransactions();
+        const initialLen = txList.length;
+        txList = txList.filter(t => t.linkedWithdrawalId !== id);
+
+        if (txList.length !== initialLen) {
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txList));
+        }
+
         this.triggerSync();
         return list;
     },
+
 
     clearAll() {
         const url = this.getApiUrl(); // Keep URL
