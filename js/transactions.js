@@ -53,7 +53,6 @@ const TransactionsManager = {
     getCostReserve() {
         const transactions = StorageManager.getTransactions();
         const withdrawals = StorageManager.getCostWithdrawals();
-        const investments = StorageManager.getInvestments();
         const settings = StorageManager.getSettings();
         const costPercent = settings.costPercent || 30;
 
@@ -62,18 +61,13 @@ const TransactionsManager = {
             .filter(t => t.type === 'income' && t.deductCost === true)
             .reduce((sum, t) => sum + (parseFloat(t.amount || 0) * costPercent / 100), 0);
 
-        // คำนวณยอดลงทุนรวม
-        const totalInvestments = investments
-            .reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
-
         // คำนวณยอดถอนออก
         const totalWithdrawn = withdrawals.reduce((sum, w) => sum + parseFloat(w.amount || 0), 0);
 
         return {
             totalDeducted,      // ยอดหักสะสม
-            totalInvestments,   // ยอดลงทุนรวม
             totalWithdrawn,     // ยอดถอนออก
-            balance: totalDeducted + totalInvestments - totalWithdrawn,  // ยอดคงเหลือ (รวมเงินลงทุน)
+            balance: totalDeducted - totalWithdrawn,  // ยอดคงเหลือ (เฉพาะเงินหักต้นทุน ไม่รวมเงินลงทุน)
             costPercent,
             withdrawals
         };

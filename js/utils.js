@@ -8,7 +8,6 @@ const DEFAULT_CATEGORIES = {
     INCOME: [
         { id: 'sales', name: 'ขายสินค้า', icon: '🛒' },
         { id: 'service', name: 'บริการ', icon: '🔧' },
-        { id: 'invest', name: 'เงินลงทุนเพิ่ม', icon: '💰' },
         { id: 'other', name: 'อื่นๆ', icon: '📥' }
     ],
     EXPENSE: [

@@ -47,6 +47,14 @@ description: "คู่มือมาตรฐานการทำงานแ
 *   **Safeguards:** ฟังก์ชันสำคัญ (Edit, Delete, Submit) ต้องครอบ `try-catch` เสมอ เพื่อให้สามารถ `alert` แจ้ง USER ได้หากเกิดข้อผิดพลาด ดีกว่าปล่อยให้เงียบไป
 *   **Input Protection:** ห้ามเขียนโค้ดที่ Reset ค่าที่ USER กรอกไว้ (เช่น วันที่) โดยไม่จำเป็น (ตัวอย่าง: `setTxType` ต้องไม่ล้างวันที่ทิ้งถ้าเป็นการแก้ไข)
 
+### 3.3 Typography & Theme (Cute Aesthetics) 🎀
+*   **Font Choice:** ฟอนต์ที่แนะนำสำหรับสไตล์น่ารัก/เป็นกันเอง คือ **'Mali'** (Google Fonts)
+    *   *เหตุผล:* ให้ความรู้สึกเหมือนลายมือเขียน สบายตา เหมาะกับ Family App
+*   **Alternatives:**
+    *   ถ้าต้องการความสนุกสนาน: **'Itim'** หรือ **'Kodchasan'**
+    *   ถ้าต้องการความทันสมัย: **'Kanit'** (Standard Thai Font)
+*   **Implementation:** ต้อง `@import` จาก Google Fonts เสมอ และกำหนด `font-family` ใน `body` ให้ครอบคลุมทุก OS
+
 ---
 
 ## 4. 🛠️ Troubleshooting Checklist (แนวทางการแก้บั๊ก)

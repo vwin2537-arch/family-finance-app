@@ -34,29 +34,6 @@ const InvestmentsManager = {
         };
     },
 
-    // Calculate Dividends based on current month's profit
-    calculateDividends(monthlyProfit) {
-        const settings = StorageManager.getSettings();
-        const overview = this.getOverview();
-
-        // Deduct cost buffer
-        const costDeduction = monthlyProfit > 0 ? monthlyProfit * (settings.costPercent / 100) : 0;
-        const distributable = monthlyProfit - costDeduction;
-
-        // Split based on share
-        const husbandDividend = distributable > 0 ? distributable * (overview.husband.share / 100) : 0;
-        const wifeDividend = distributable > 0 ? distributable * (overview.wife.share / 100) : 0;
-
-        return {
-            profit: monthlyProfit,
-            deduction: costDeduction,
-            deductionPercent: settings.costPercent,
-            distributable,
-            husband: husbandDividend,
-            wife: wifeDividend
-        };
-    },
-
     // Render Investment History
     renderHistory(containerId) {
         const container = document.getElementById(containerId);
