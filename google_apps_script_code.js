@@ -1,6 +1,7 @@
 /**
- * Family Biz - Backend API (Google Apps Script) v4.2 (Legacy Safe)
+ * Family Biz - Backend API (Google Apps Script) v4.3 (Performance Optimized)
  * รองรับทั้ง V8 และ Legacy Runtime
+ * v4.3: Cache Spreadsheet ID, ลด API calls, batch write
  */
 
 var FOLDER_ID = "1owOBdWc-aCg799wPHAjddO1MrWaquo0z";
@@ -74,18 +75,37 @@ function handleRequest(e) {
 // --- Database Logic ---
 
 function getOrCreateDatabase() {
+    // ใช้ PropertiesService เก็บ Spreadsheet ID ไว้
+    // เพื่อข้าม DriveApp.getFolderById() ที่ช้ามากใน request ถัดไป
+    var props = PropertiesService.getScriptProperties();
+    var cachedId = props.getProperty('DB_SPREADSHEET_ID');
+
+    if (cachedId) {
+        try {
+            return SpreadsheetApp.openById(cachedId);
+        } catch (e) {
+            // ถ้าเปิดไม่ได้ (เช่นถูกลบ) ให้ล้าง cache แล้วสร้างใหม่
+            props.deleteProperty('DB_SPREADSHEET_ID');
+        }
+    }
+
+    // ค้นหาหรือสร้างใหม่ (ทำแค่ครั้งแรกหรือถ้า cache หาย)
     var folder = DriveApp.getFolderById(FOLDER_ID);
     var files = folder.getFilesByName(DB_NAME);
 
+    var ss;
     if (files.hasNext()) {
-        return SpreadsheetApp.open(files.next());
+        ss = SpreadsheetApp.open(files.next());
     } else {
-        var ss = SpreadsheetApp.create(DB_NAME);
+        ss = SpreadsheetApp.create(DB_NAME);
         var file = DriveApp.getFileById(ss.getId());
         file.moveTo(folder);
         setupSheets(ss);
-        return ss;
     }
+
+    // Cache ID ไว้ใช้ครั้งต่อไป
+    props.setProperty('DB_SPREADSHEET_ID', ss.getId());
+    return ss;
 }
 
 function setupSheets(ss) {
@@ -117,7 +137,6 @@ function setupSheets(ss) {
 }
 
 function getAllData(ss) {
-    setupSheets(ss);
     return {
         transactions: sheetToObjects(ss.getSheetByName('Transactions')),
         investments: sheetToObjects(ss.getSheetByName('Investments')),
@@ -180,19 +199,27 @@ function settingsToObject(sheet) {
 function updateSettingsSheet(ss, newSettings) {
     var sheet = ss.getSheetByName('Settings');
     sheet.clearContents();
-    sheet.appendRow(['Key', 'Value']);
-    sheet.appendRow(['costPercent', newSettings.costPercent || 30]);
-    sheet.appendRow(['husbandShare', newSettings.husbandShare || 50]);
-    sheet.appendRow(['wifeShare', newSettings.wifeShare || 50]);
+    // Batch write ทีเดียวแทน 4 appendRow
+    var data = [
+        ['Key', 'Value'],
+        ['costPercent', newSettings.costPercent || 30],
+        ['husbandShare', newSettings.husbandShare || 50],
+        ['wifeShare', newSettings.wifeShare || 50]
+    ];
+    sheet.getRange(1, 1, data.length, 2).setValues(data);
 }
 
 function overwriteSheet(ss, sheetName, objects, fieldOrder) {
     var sheet = ss.getSheetByName(sheetName);
     sheet.clearContents();
-    var headers = fieldOrder; // Use camelCase as headers
-    sheet.appendRow(headers);
-    if (!objects || !objects.length) return;
 
+    if (!objects || !objects.length) {
+        // เขียนแค่ header
+        sheet.getRange(1, 1, 1, fieldOrder.length).setValues([fieldOrder]);
+        return;
+    }
+
+    // รวม header + data เป็น array เดียว แล้วเขียนครั้งเดียว (1 API call แทน 3)
     var rows = objects.map(function (obj) {
         return fieldOrder.map(function (field) {
             var val = obj[field];
@@ -200,7 +227,8 @@ function overwriteSheet(ss, sheetName, objects, fieldOrder) {
         });
     });
 
-    sheet.getRange(2, 1, rows.length, fieldOrder.length).setValues(rows);
+    var allRows = [fieldOrder].concat(rows);
+    sheet.getRange(1, 1, allRows.length, fieldOrder.length).setValues(allRows);
 }
 
 
